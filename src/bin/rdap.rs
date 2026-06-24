@@ -50,18 +50,25 @@ enum Command {
     /// Look up an entity by handle
     Entity { handle: String },
     /// Search for domain names
-    Domains { name: String },
+    Domains {
+        /// Name pattern (wildcards: * ?)
+        name: String,
+    },
     /// Search for entities
     Entities {
+        /// Handle pattern
         #[arg(long, value_name = "PATTERN")]
         handle: Option<String>,
+        /// Full name (fn) pattern
         #[arg(long = "fn", value_name = "PATTERN")]
         fn_name: Option<String>,
     },
     /// Search for hosts/nameservers
     Hosts {
+        /// Name pattern
         #[arg(long, value_name = "PATTERN")]
         name: Option<String>,
+        /// IP address pattern
         #[arg(long, value_name = "PATTERN")]
         ip: Option<String>,
     },
