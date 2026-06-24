@@ -268,3 +268,36 @@ impl HostSearchResponse {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_cursor_finds_cursor_param() {
+        let href = "https://rdap.org/domains?name=example*&cursor=page2token";
+        assert_eq!(extract_cursor(href), Some("page2token".to_string()));
+    }
+
+    #[test]
+    fn extract_cursor_percent_decodes_value() {
+        let href = "https://rdap.org/domains?name=ex*&cursor=key%3Dvalue%26more";
+        assert_eq!(extract_cursor(href), Some("key=value&more".to_string()));
+    }
+
+    #[test]
+    fn extract_cursor_returns_none_when_param_absent() {
+        let href = "https://rdap.org/domains?name=example*";
+        assert_eq!(extract_cursor(href), None);
+    }
+
+    #[test]
+    fn extract_cursor_returns_none_for_invalid_url() {
+        assert_eq!(extract_cursor("not a url"), None);
+    }
+
+    #[test]
+    fn extract_cursor_ignores_other_params() {
+        let href = "https://rdap.org/domains?name=ex*&sort=name&cursor=tok&fields=ldhName";
+        assert_eq!(extract_cursor(href), Some("tok".to_string()));
+    }
+}

@@ -136,3 +136,141 @@ pub fn vcard_field(vcard: &Option<Value>, field: &str) -> Option<String> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{from_str, json};
+
+    // ── vcard_field ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn vcard_field_extracts_named_field() {
+        let v = json!(["vcard", [
+            ["version", {}, "text", "4.0"],
+            ["fn",      {}, "text", "Jane Doe"],
+            ["email",   {}, "text", "jane@example.com"]
+        ]]);
+        assert_eq!(vcard_field(&Some(v), "fn"), Some("Jane Doe".to_string()));
+    }
+
+    #[test]
+    fn vcard_field_returns_none_for_missing_field() {
+        let v = json!(["vcard", [["fn", {}, "text", "Jane Doe"]]]);
+        assert_eq!(vcard_field(&Some(v), "email"), None);
+    }
+
+    #[test]
+    fn vcard_field_returns_none_for_none_vcard() {
+        assert_eq!(vcard_field(&None, "fn"), None);
+    }
+
+    #[test]
+    fn vcard_field_returns_none_for_malformed_vcard() {
+        let v = json!("not an array");
+        assert_eq!(vcard_field(&Some(v), "fn"), None);
+    }
+
+    // ── DomainResponse deserialization ────────────────────────────────────────
+
+    #[test]
+    fn domain_response_deserializes_renamed_fields() {
+        let json = r#"{
+            "ldhName": "example.com",
+            "unicodeName": "example.com",
+            "handle": "D1234",
+            "status": ["active"],
+            "events": [{"eventAction": "registration", "eventDate": "2020-01-01T00:00:00Z"}],
+            "nameservers": [{"ldhName": "ns1.example.com"}]
+        }"#;
+        let r: DomainResponse = from_str(json).unwrap();
+        assert_eq!(r.ldh_name.as_deref(), Some("example.com"));
+        assert_eq!(r.unicode_name.as_deref(), Some("example.com"));
+        assert_eq!(r.handle.as_deref(), Some("D1234"));
+        assert_eq!(r.status.as_deref(), Some(["active".to_string()].as_slice()));
+        let ev = &r.events.unwrap()[0];
+        assert_eq!(ev.action, "registration");
+        assert_eq!(ev.date, "2020-01-01T00:00:00Z");
+        assert_eq!(r.nameservers.unwrap()[0].ldh_name.as_deref(), Some("ns1.example.com"));
+    }
+
+    #[test]
+    fn domain_response_optional_fields_default_to_none() {
+        let r: DomainResponse = from_str("{}").unwrap();
+        assert!(r.ldh_name.is_none());
+        assert!(r.status.is_none());
+        assert!(r.events.is_none());
+    }
+
+    // ── HostResponse deserialization ──────────────────────────────────────────
+
+    #[test]
+    fn host_response_deserializes_renamed_fields() {
+        let json = r#"{
+            "startAddress": "192.0.2.0",
+            "endAddress": "192.0.2.255",
+            "type": "ASSIGNED"
+        }"#;
+        let r: HostResponse = from_str(json).unwrap();
+        assert_eq!(r.start_address.as_deref(), Some("192.0.2.0"));
+        assert_eq!(r.end_address.as_deref(), Some("192.0.2.255"));
+        assert_eq!(r.ip_type.as_deref(), Some("ASSIGNED"));
+    }
+
+    // ── EntityResponse deserialization ────────────────────────────────────────
+
+    #[test]
+    fn entity_response_deserializes_renamed_fields() {
+        let json = r#"{"objectClassName": "entity", "handle": "GOGL"}"#;
+        let r: EntityResponse = from_str(json).unwrap();
+        assert_eq!(r.class.as_deref(), Some("entity"));
+        assert_eq!(r.handle.as_deref(), Some("GOGL"));
+    }
+
+    // ── DomainSearchResponse / pagingMetadata ─────────────────────────────────
+
+    #[test]
+    fn domain_search_response_deserializes_paging_metadata() {
+        let json = r#"{
+            "domainSearchResults": [{"ldhName": "example.com"}],
+            "pagingMetadata": {
+                "totalCount": 42,
+                "pageNumber": 1,
+                "pageSize": 10,
+                "links": [{"rel": "next", "href": "https://rdap.org/domains?name=ex*&cursor=abc"}]
+            }
+        }"#;
+        let r: DomainSearchResponse = from_str(json).unwrap();
+        assert_eq!(r.results.as_ref().unwrap().len(), 1);
+        let pm = r.paging_metadata.unwrap();
+        assert_eq!(pm.total_count, Some(42));
+        assert_eq!(pm.page_number, Some(1));
+        assert_eq!(pm.page_size, Some(10));
+        let link = &pm.links.unwrap()[0];
+        assert_eq!(link.rel.as_deref(), Some("next"));
+    }
+
+    #[test]
+    fn domain_search_response_paging_metadata_absent_is_none() {
+        let r: DomainSearchResponse = from_str(r#"{"domainSearchResults": []}"#).unwrap();
+        assert!(r.paging_metadata.is_none());
+    }
+
+    // ── EntitySearchResponse deserialization ──────────────────────────────────
+
+    #[test]
+    fn entity_search_response_deserializes_results_key() {
+        let json = r#"{"entitySearchResults": [{"handle": "GOGL"}]}"#;
+        let r: EntitySearchResponse = from_str(json).unwrap();
+        assert_eq!(r.results.as_ref().unwrap()[0].handle.as_deref(), Some("GOGL"));
+    }
+
+    // ── HostSearchResponse deserialization ────────────────────────────────────
+
+    #[test]
+    fn host_search_response_deserializes_results_key() {
+        let json = r#"{"nameserverSearchResults": [{"ldhName": "ns1.example.com"}]}"#;
+        let r: HostSearchResponse = from_str(json).unwrap();
+        assert_eq!(r.results.as_ref().unwrap()[0].ldh_name.as_deref(), Some("ns1.example.com"));
+    }
+}

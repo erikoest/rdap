@@ -32,19 +32,34 @@ Support the following RDAP extensions:
 
 ## Architecture
 
-Single-file Rust CLI (`src/main.rs`) built with:
+Rust library + binary (`src/lib.rs` + `src/bin/rdap.rs`) built with:
 - **clap** (derive) — subcommands `domain`, `host`, `entity`, `domains`, `entities`, `hosts`, `help` plus global flags `--server`, `--ipv4`/`--ipv6`, `--user`/`--password`, `--cursor`, `--count`, `--sort`, `--fields`, `--debug`, `--no-color`
-- **reqwest** + **tokio** — async HTTP; one shared `reqwest::Client` built in `main` with optional `local_address` binding for IP version forcing and per-request `.basic_auth()`
+- **reqwest** + **tokio** — async HTTP with optional `local_address` binding for IP version forcing and per-request `.basic_auth()`
 - **serde/serde_json** — typed response structs (`DomainResponse`, `HostResponse`, `EntityResponse`) with `Option` fields throughout since RDAP fields are all optional per spec
+
+### Module layout
+
+```
+src/
+  lib.rs       — pub mod declarations
+  types.rs     — pure data structs (serde only, no display logic)
+  format.rs    — Formatter struct + impl display blocks on response types
+  client.rs    — Client struct + private fetch method
+  lookup.rs    — impl Client: lookup_domain/host/entity/help
+  search.rs    — impl Client: search_domains/entities/hosts
+  bin/rdap.rs  — parse Cli, build Client, dispatch one method call
+```
+
+### Key objects
+
+**`Formatter { nc: bool }`** (`src/format.rs`) — wraps the `--no-color` flag. All ANSI output goes through its methods (`heading`, `row`, `print_events`, `print_entities`, `print_notices`, `print_paging_metadata`, `print_next_cursor`). Each response type has a `print(&self, fmt: &Formatter)` method defined here via `impl` blocks.
+
+**`Client`** (`src/client.rs`) — owns the `reqwest::Client`, server URL, auth credentials, and all RFC-8977/8982 request params. `fetch<T>()` is a private async method; lookup and search methods are added via `impl Client` blocks in `lookup.rs` and `search.rs`. Built once in `main` and passed by reference.
 
 ### Key patterns
 
-All HTTP goes through `fetch<T>()` — a generic helper that applies auth and deserialises the response. Lookup functions (`lookup_domain`, `lookup_host`, `lookup_entity`) take `(client, opts, server, target)` and call `fetch`. Search functions (`search_domains`, `search_entities`, `search_hosts`) follow the same signature.
-
 RDAP contacts use jCard (`vcardArray`) encoding — `vcard_field()` walks the nested `["vcard", [[type, params, kind, value], ...]]` structure to extract named fields.
 
-Formatting is plain ANSI via `heading()` / `row()` / `label()` helpers — no external terminal crate. All helpers accept a `no_color: bool`; when set, colors are replaced with bold/underline/italic escapes.
-
-RFC-8977 paging: search responses deserialise a `paging_metadata` block (`totalCount`, `pageNumber`, `pageSize`, `links`). The next-page cursor is extracted from the `rel=next` link href, percent-decoded, and shown as `--cursor <value>`.
+RFC-8977 paging: search responses deserialise a `pagingMetadata` block (`totalCount`, `pageNumber`, `pageSize`, `links`). The next-page cursor is extracted from the `rel=next` link href, percent-decoded via `url::Url::query_pairs()`, and shown as `--cursor <value>`.
 
 Default server is `https://rdap.org` (a bootstrapping proxy that redirects to the authoritative registry). Trailing slashes on `--server` are stripped before URL construction.
