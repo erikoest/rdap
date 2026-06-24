@@ -2,3 +2,4 @@
 *~
 *.lock
 skills-lock.json
+.worktrees
