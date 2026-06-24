@@ -2,6 +2,7 @@ use crate::format::Formatter;
 
 // ── Client ───────────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub struct Client {
     http: reqwest::Client,
     pub(crate) server: String,
@@ -14,6 +15,7 @@ pub struct Client {
     pub(crate) fmt: Formatter,
 }
 
+#[allow(dead_code)]
 impl Client {
     pub fn new(
         http: reqwest::Client,
