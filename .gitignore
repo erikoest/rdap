@@ -3,3 +3,4 @@
 *.lock
 skills-lock.json
 .worktrees
+test_private
