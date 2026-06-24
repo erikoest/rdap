@@ -76,8 +76,8 @@ enum Command {
     Help,
     /// Look up a nameserver by Norid handle [A-Z0-9-] (Norid extension)
     NameserverHandle { handle: String },
-    /// Fetch the count of .no domains for a given type code [INPR0-9.] (Norid extension)
-    NoridDomainCount { query: String },
+    /// Fetch the count of .no domains for a given identity [INPR0-9.] (Norid extension)
+    NoridDomainCount { identity: String },
 }
 
 #[tokio::main]
@@ -118,7 +118,7 @@ async fn main() {
             client.search_hosts(name.as_deref(), ip.as_deref()).await,
         Command::Help               => client.lookup_help().await,
         Command::NameserverHandle { handle } => client.lookup_nameserver_handle(handle).await,
-        Command::NoridDomainCount { query } => client.lookup_norid_domain_count(query).await,
+        Command::NoridDomainCount { identity } => client.lookup_norid_domain_count(identity).await,
     };
 
     if let Err(e) = result {

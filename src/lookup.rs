@@ -47,10 +47,10 @@ impl Client {
         Ok(())
     }
 
-    pub async fn lookup_norid_domain_count(&self, query: &str) -> anyhow::Result<()> {
-        let url = format!("{}/norid_domain_count/{}", self.server, query);
+    pub async fn lookup_norid_domain_count(&self, identity: &str) -> anyhow::Result<()> {
+        let url = format!("{}/norid_domain_count/{}", self.server, identity);
         let resp: NoridDomainCountResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Norid Domain Count: {}", query));
+        self.fmt.heading(&format!("Norid Domain Count: {}", identity));
         resp.print(&self.fmt);
         println!();
         Ok(())

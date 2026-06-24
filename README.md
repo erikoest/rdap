@@ -14,13 +14,15 @@ cargo install --path .
 rdap [OPTIONS] <COMMAND>
 
 Commands:
-  domain    Look up a domain name
-  host      Look up an IP address or CIDR block
-  entity    Look up an entity by handle
-  domains   Search for domain names
-  entities  Search for entities
-  hosts     Search for hosts/nameservers
-  help      Fetch server help and usage notices
+  domain              Look up a domain name
+  host                Look up an IP address or CIDR block
+  entity              Look up an entity by handle
+  domains             Search for domain names
+  entities            Search for entities
+  hosts               Search for hosts/nameservers
+  help                Fetch server help and usage notices
+  nameserver-handle   Look up a nameserver by Norid handle (Norid extension)
+  norid-domain-count  Fetch domain count for an identity (Norid extension)
 
 Options:
   -s, --server <URL>         RDAP server base URL (default: https://rdap.org)
@@ -77,6 +79,10 @@ rdap --ipv6 domain example.com
 
 # Authenticated query
 rdap --user alice --password secret domain example.com
+
+# Norid extensions (use with --server https://rdap.norid.no)
+rdap --server https://rdap.norid.no nameserver-handle NSHA1234-NORID
+rdap --server https://rdap.norid.no norid-domain-count <identity>
 ```
 
 ## Notes
@@ -86,3 +92,4 @@ rdap --user alice --password secret domain example.com
 - `--ipv4` and `--ipv6` are mutually exclusive.
 - `entities` search requires `--handle` or `--fn`; `hosts` search requires `--name` or `--ip`.
 - `--cursor`, `--count`, `--sort`, and `--fields` apply to all commands but are most relevant to search.
+- Norid extensions (`nameserver-handle`, `norid-domain-count`) require `--server https://rdap.norid.no`.
