@@ -1,5 +1,6 @@
 use crate::types::{
     DomainResponse, DomainSearchResponse, Entity, EntityResponse, EntitySearchResponse,
+    NoridDomainCountResponse,
     Event, HelpResponse, HostResponse, HostSearchResponse, Link, Notice, PagingMetadata,
     vcard_field,
 };
@@ -122,8 +123,13 @@ impl DomainResponse {
             fmt.row("Status", &statuses.join(", "));
         }
         if let Some(ns) = &self.nameservers {
-            let names: Vec<&str> = ns.iter().filter_map(|n| n.ldh_name.as_deref()).collect();
-            fmt.row("Nameservers", &names.join(", "));
+            for n in ns {
+                let name = n.ldh_name.as_deref().unwrap_or("—");
+                match n.handle.as_deref() {
+                    Some(h) => fmt.row("Nameserver", &format!("{}  {}", name, h)),
+                    None    => fmt.row("Nameserver", name),
+                }
+            }
         }
         if let Some(events) = &self.events {
             println!();
@@ -170,6 +176,13 @@ impl EntityResponse {
         if let Some(org) = vcard_field(&self.vcard_array, "org") { fmt.row("Organisation", &org); }
         if let Some(email) = vcard_field(&self.vcard_array, "email") { fmt.row("Email", &email); }
         if let Some(tel) = vcard_field(&self.vcard_array, "tel") { fmt.row("Phone", &tel); }
+        if let Some(ids) = &self.public_ids {
+            for id in ids {
+                let label = id.id_type.as_deref().unwrap_or("ID");
+                let value = id.identifier.as_deref().unwrap_or("—");
+                fmt.row(label, value);
+            }
+        }
         if let Some(statuses) = &self.status {
             fmt.row("Status", &statuses.join(", "));
         }
@@ -264,6 +277,18 @@ impl HostSearchResponse {
         }
         if let Some(notices) = self.notices.as_deref() {
             fmt.print_notices(notices);
+        }
+    }
+}
+
+impl NoridDomainCountResponse {
+    pub fn print(&self, fmt: &Formatter) {
+        if let Some(entries) = &self.domain_count {
+            for dc in entries {
+                let domain = dc.parent_domain_name.as_deref().unwrap_or("—");
+                let count  = dc.count.map(|n| n.to_string()).unwrap_or_else(|| "—".to_string());
+                fmt.row(domain, &count);
+            }
         }
     }
 }

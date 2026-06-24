@@ -82,7 +82,7 @@ const ENTITY_SEARCH_JSON: &str = r#"{"entitySearchResults":[{"handle":"GOGL","ob
 const HOST_SEARCH_JSON: &str = r#"{"nameserverSearchResults":[{"ldhName":"ns1.example.com"}]}"#;
 const DOMAIN_SEARCH_PAGED_JSON: &str = r#"{
     "domainSearchResults": [{"ldhName": "example.com"}],
-    "pagingMetadata": {
+    "paging_metadata": {
         "totalCount": 100,
         "pageNumber": 1,
         "pageSize": 10,

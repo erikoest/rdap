@@ -31,6 +31,7 @@ pub struct Event {
 pub struct Nameserver {
     #[serde(rename = "ldhName")]
     pub ldh_name: Option<String>,
+    pub handle: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -71,6 +72,13 @@ pub struct HostResponse {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct PublicId {
+    #[serde(rename = "type")]
+    pub id_type: Option<String>,
+    pub identifier: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct EntityResponse {
     pub handle: Option<String>,
     #[serde(rename = "objectClassName")]
@@ -81,6 +89,8 @@ pub struct EntityResponse {
     pub vcard_array: Option<Value>,
     pub events: Option<Vec<Event>>,
     pub entities: Option<Vec<Entity>>,
+    #[serde(rename = "publicIds")]
+    pub public_ids: Option<Vec<PublicId>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -98,7 +108,7 @@ pub struct PagingMetadata {
 pub struct DomainSearchResponse {
     #[serde(rename = "domainSearchResults")]
     pub results: Option<Vec<DomainResponse>>,
-    #[serde(rename = "pagingMetadata")]
+    #[serde(rename = "paging_metadata")]
     pub paging_metadata: Option<PagingMetadata>,
     pub notices: Option<Vec<Notice>>,
     pub links: Option<Vec<Link>>,
@@ -108,7 +118,7 @@ pub struct DomainSearchResponse {
 pub struct EntitySearchResponse {
     #[serde(rename = "entitySearchResults")]
     pub results: Option<Vec<EntityResponse>>,
-    #[serde(rename = "pagingMetadata")]
+    #[serde(rename = "paging_metadata")]
     pub paging_metadata: Option<PagingMetadata>,
     pub notices: Option<Vec<Notice>>,
     pub links: Option<Vec<Link>>,
@@ -118,10 +128,22 @@ pub struct EntitySearchResponse {
 pub struct HostSearchResponse {
     #[serde(rename = "nameserverSearchResults")]
     pub results: Option<Vec<Nameserver>>,
-    #[serde(rename = "pagingMetadata")]
+    #[serde(rename = "paging_metadata")]
     pub paging_metadata: Option<PagingMetadata>,
     pub notices: Option<Vec<Notice>>,
     pub links: Option<Vec<Link>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DomainCount {
+    pub count: Option<u64>,
+    #[serde(rename = "parentDomainName")]
+    pub parent_domain_name: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct NoridDomainCountResponse {
+    pub domain_count: Option<Vec<DomainCount>>,
 }
 
 pub fn vcard_field(vcard: &Option<Value>, field: &str) -> Option<String> {
@@ -233,7 +255,7 @@ mod tests {
     fn domain_search_response_deserializes_paging_metadata() {
         let json = r#"{
             "domainSearchResults": [{"ldhName": "example.com"}],
-            "pagingMetadata": {
+            "paging_metadata": {
                 "totalCount": 42,
                 "pageNumber": 1,
                 "pageSize": 10,

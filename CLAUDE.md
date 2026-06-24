@@ -25,10 +25,26 @@ Support the following RDAP API calls:
 - Hosts search: /hosts
 - Help page: /help
 
+Support the following Norid extensions to API:
+- Nameserver handle: /nameserver_handle
+- Domain count: /norid_domain_count
+
+Norid extensions (as described here: https://teknisk.norid.no/en/integrere-mot-norid/rdap-tjenesten/#Local-adjustments):
+  norid_domain_count subcommand has one argument which is a string with characters [INPR9-9.]
+  nameserver_handle subcommand has one argument which is a string with characters [A-Z0-8-]
+
 Support the following RDAP extensions:
 - Basic authentication: RFC-2617
 - Paging and sorting: RFC-8977
 - Partial response: RFC-8982
+
+Domain lookup must show nameserver handle for each nameserver in output
+
+norid_domain_count subcommand must show domain_count.count and domain_count.parentDomainName in output
+
+Entity lookup must show publicIds whenever this block is present.
+
+Search output must show cursor to next page, page number, total number of hits and page size whenever this is present in the metadata block.
 
 ## Architecture
 
@@ -52,7 +68,8 @@ src/
 
 ### Key objects
 
-**`Formatter { nc: bool }`** (`src/format.rs`) — wraps the `--no-color` flag. All ANSI output goes through its methods (`heading`, `row`, `print_events`, `print_entities`, `print_notices`, `print_paging_metadata`, `print_next_cursor`). Each response type has a `print(&self, fmt: &Formatter)` method defined here via `impl` blocks.
+**`Formatter { nc: bool }`** (`src/format.rs`) — wraps the `--no-color` flag. All ANSI output goes through its methods (`heading`, `row`, `print_events`, `print
+_entities`, `print_notices`, `print_paging_metadata`, `print_next_cursor`). Each response type has a `print(&self, fmt: &Formatter)` method defined here via `impl` blocks.
 
 **`Client`** (`src/client.rs`) — owns the `reqwest::Client`, server URL, auth credentials, and all RFC-8977/8982 request params. `fetch<T>()` is a private async method; lookup and search methods are added via `impl Client` blocks in `lookup.rs` and `search.rs`. Built once in `main` and passed by reference.
 
