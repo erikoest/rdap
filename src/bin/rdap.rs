@@ -1,10 +1,11 @@
 use clap::{Parser, Subcommand};
-use rdap::client::Client;
+use rdap::client::{Client, ClientConfig};
 
 #[derive(Parser)]
 #[command(name = "rdap", about = "RDAP lookup client", disable_help_subcommand = true)]
+#[allow(clippy::struct_excessive_bools)]
 struct Cli {
-    /// RDAP server base URL (default: https://rdap.org)
+    /// RDAP server base URL (default: <https://rdap.org>)
     #[arg(short, long, value_name = "URL")]
     server: Option<String>,
     /// Force connections over IPv4
@@ -98,14 +99,17 @@ async fn main() {
     }
     let http = builder.build().expect("failed to build HTTP client");
 
-    let server = cli.server.as_deref().unwrap_or("https://rdap.org")
-        .trim_end_matches('/').to_string();
-    let auth = cli.user.zip(cli.password);
-
-    let client = Client::new(
-        http, server, auth, cli.cursor, cli.count,
-        cli.sort, cli.fields, cli.debug, cli.no_color,
-    );
+    let client = Client::new(http, ClientConfig {
+        server: cli.server.as_deref().unwrap_or("https://rdap.org")
+            .trim_end_matches('/').to_string(),
+        auth: cli.user.zip(cli.password),
+        cursor: cli.cursor,
+        count: cli.count,
+        sort: cli.sort,
+        fields: cli.fields,
+        debug: cli.debug,
+        no_color: cli.no_color,
+    });
 
     let result = match &cli.command {
         Command::Domain { name }    => client.lookup_domain(name).await,
@@ -123,7 +127,7 @@ async fn main() {
 
     if let Err(e) = result {
         let esc = if cli.no_color { "\x1b[1m" } else { "\x1b[1;31m" };
-        eprintln!("{}error:\x1b[0m {}", esc, e);
+        eprintln!("{esc}error:\x1b[0m {e}");
         std::process::exit(1);
     }
 }

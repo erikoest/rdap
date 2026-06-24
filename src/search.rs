@@ -5,7 +5,7 @@ impl Client {
     pub async fn search_domains(&self, name: &str) -> anyhow::Result<()> {
         let url = format!("{}/domains", self.server);
         let resp: DomainSearchResponse = self.fetch(&url, &[("name", name)]).await?;
-        self.fmt.heading(&format!("Domains matching \"{}\"", name));
+        self.fmt.heading(&format!("Domains matching \"{name}\""));
         resp.print(&self.fmt);
         println!();
         Ok(())
@@ -24,7 +24,7 @@ impl Client {
         };
         let resp: EntitySearchResponse = self.fetch(&url, &extra).await?;
         let pattern = handle.or(fn_name).unwrap_or("*");
-        self.fmt.heading(&format!("Entities matching \"{}\"", pattern));
+        self.fmt.heading(&format!("Entities matching \"{pattern}\""));
         resp.print(&self.fmt);
         println!();
         Ok(())
@@ -43,7 +43,7 @@ impl Client {
         };
         let resp: HostSearchResponse = self.fetch(&url, &extra).await?;
         let pattern = name.or(ip).unwrap_or("*");
-        self.fmt.heading(&format!("Nameservers matching \"{}\"", pattern));
+        self.fmt.heading(&format!("Nameservers matching \"{pattern}\""));
         resp.print(&self.fmt);
         println!();
         Ok(())

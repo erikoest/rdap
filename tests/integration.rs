@@ -1,4 +1,4 @@
-use rdap::client::Client;
+use rdap::client::{Client, ClientConfig};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
@@ -50,25 +50,34 @@ impl MockServer {
     }
 }
 
+fn cfg(server_url: &str) -> ClientConfig {
+    ClientConfig {
+        server: server_url.to_string(),
+        auth: None, cursor: None, count: false,
+        sort: None, fields: None, debug: false, no_color: true,
+    }
+}
+
 fn client(server_url: &str) -> Client {
-    Client::new(reqwest::Client::new(), server_url.to_string(),
-        None, None, false, None, None, false, true)
+    Client::new(reqwest::Client::new(), cfg(server_url))
 }
 
 fn client_with_auth(server_url: &str, user: &str, pass: &str) -> Client {
-    Client::new(reqwest::Client::new(), server_url.to_string(),
-        Some((user.to_string(), pass.to_string())), None, false, None, None, false, true)
+    Client::new(reqwest::Client::new(), ClientConfig {
+        auth: Some((user.to_string(), pass.to_string())),
+        ..cfg(server_url)
+    })
 }
 
 fn client_with_opts(server_url: &str, cursor: Option<&str>, count: bool,
     sort: Option<&str>, fields: Option<&str>) -> Client {
-    Client::new(reqwest::Client::new(), server_url.to_string(),
-        None,
-        cursor.map(|s| s.to_string()),
+    Client::new(reqwest::Client::new(), ClientConfig {
+        cursor: cursor.map(str::to_string),
         count,
-        sort.map(|s| s.to_string()),
-        fields.map(|s| s.to_string()),
-        false, true)
+        sort: sort.map(str::to_string),
+        fields: fields.map(str::to_string),
+        ..cfg(server_url)
+    })
 }
 
 // ── RDAP response fixtures ────────────────────────────────────────────────────
@@ -221,14 +230,12 @@ async fn paged_search_response_is_parsed_without_error() {
 
 #[tokio::test]
 async fn search_entities_errors_without_handle_or_fn() {
-    let c = Client::new(reqwest::Client::new(), "http://localhost".to_string(),
-        None, None, false, None, None, false, true);
+    let c = client("http://localhost");
     assert!(c.search_entities(None, None).await.is_err());
 }
 
 #[tokio::test]
 async fn search_hosts_errors_without_name_or_ip() {
-    let c = Client::new(reqwest::Client::new(), "http://localhost".to_string(),
-        None, None, false, None, None, false, true);
+    let c = client("http://localhost");
     assert!(c.search_hosts(None, None).await.is_err());
 }

@@ -3,27 +3,28 @@ use crate::types::{DomainResponse, EntityResponse, HelpResponse, HostResponse, N
 
 impl Client {
     pub async fn lookup_domain(&self, name: &str) -> anyhow::Result<()> {
-        let url = format!("{}/domain/{}", self.server, name);
+        let url = format!("{}/domain/{name}", self.server);
         let resp: DomainResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Domain: {}", name.to_uppercase()));
+        let uname = name.to_uppercase();
+        self.fmt.heading(&format!("Domain: {uname}"));
         resp.print(&self.fmt);
         println!();
         Ok(())
     }
 
     pub async fn lookup_host(&self, address: &str) -> anyhow::Result<()> {
-        let url = format!("{}/ip/{}", self.server, address);
+        let url = format!("{}/ip/{address}", self.server);
         let resp: HostResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Host / Network: {}", address));
+        self.fmt.heading(&format!("Host / Network: {address}"));
         resp.print(&self.fmt);
         println!();
         Ok(())
     }
 
     pub async fn lookup_entity(&self, handle: &str) -> anyhow::Result<()> {
-        let url = format!("{}/entity/{}", self.server, handle);
+        let url = format!("{}/entity/{handle}", self.server);
         let resp: EntityResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Entity: {}", handle));
+        self.fmt.heading(&format!("Entity: {handle}"));
         resp.print(&self.fmt);
         println!();
         Ok(())
@@ -32,25 +33,26 @@ impl Client {
     pub async fn lookup_help(&self) -> anyhow::Result<()> {
         let url = format!("{}/help", self.server);
         let resp: HelpResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Help: {}", self.server));
+        let server = &self.server;
+        self.fmt.heading(&format!("Help: {server}"));
         resp.print(&self.fmt);
         println!();
         Ok(())
     }
 
     pub async fn lookup_nameserver_handle(&self, handle: &str) -> anyhow::Result<()> {
-        let url = format!("{}/nameserver_handle/{}", self.server, handle);
+        let url = format!("{}/nameserver_handle/{handle}", self.server);
         let resp: HostResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Nameserver: {}", handle));
+        self.fmt.heading(&format!("Nameserver: {handle}"));
         resp.print(&self.fmt);
         println!();
         Ok(())
     }
 
     pub async fn lookup_norid_domain_count(&self, identity: &str) -> anyhow::Result<()> {
-        let url = format!("{}/norid_domain_count/{}", self.server, identity);
+        let url = format!("{}/norid_domain_count/{identity}", self.server);
         let resp: NoridDomainCountResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Norid Domain Count: {}", identity));
+        self.fmt.heading(&format!("Norid Domain Count: {identity}"));
         resp.print(&self.fmt);
         println!();
         Ok(())

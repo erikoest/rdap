@@ -14,6 +14,7 @@ pub struct Formatter {
 }
 
 impl Formatter {
+    #[must_use]
     pub fn new(nc: bool) -> Self {
         Self { nc }
     }
@@ -24,13 +25,13 @@ impl Formatter {
 
     fn label(&self, s: &str) -> String {
         let esc = if self.nc { "\x1b[1m" } else { "\x1b[1;36m" };
-        format!("{}{:<18}\x1b[0m", esc, s)
+        format!("{esc}{s:<18}\x1b[0m")
     }
 
     pub fn heading(&self, s: &str) {
         let esc = if self.nc { "\x1b[1;4m" } else { "\x1b[1;33m" };
-        println!("\n{}{}\x1b[0m", esc, s);
-        println!("{}", RULE);
+        println!("\n{esc}{s}\x1b[0m");
+        println!("{RULE}");
     }
 
     pub fn row(&self, key: &str, value: &str) {
@@ -52,7 +53,7 @@ impl Formatter {
             let email = vcard_field(&e.vcard_array, "email").unwrap_or_default();
             let mut parts = vec![handle.to_string()];
             if !name.is_empty() { parts.push(name); }
-            if !email.is_empty() { parts.push(format!("<{}>", email)); }
+            if !email.is_empty() { parts.push(format!("<{email}>")); }
             self.row(&roles, &parts.join("  "));
         }
     }
@@ -91,7 +92,7 @@ impl Formatter {
             self.row("Total", &count.to_string());
         }
         match (pm.page_number, pm.page_size) {
-            (Some(n), Some(s)) => self.row("Page", &format!("{} (size {})", n, s)),
+            (Some(n), Some(s)) => self.row("Page", &format!("{n} (size {s})")),
             (Some(n), None)    => self.row("Page", &n.to_string()),
             (None, Some(s))    => self.row("Page size", &s.to_string()),
             (None, None)       => {}
@@ -104,6 +105,7 @@ impl Formatter {
 
 // ── cursor helper (no state needed) ──────────────────────────────────────────
 
+#[must_use]
 pub fn extract_cursor(href: &str) -> Option<String> {
     url::Url::parse(href).ok()?
         .query_pairs()
@@ -126,7 +128,7 @@ impl DomainResponse {
             for n in ns {
                 let name = n.ldh_name.as_deref().unwrap_or("—");
                 match n.handle.as_deref() {
-                    Some(h) => fmt.row("Nameserver", &format!("{}  {}", name, h)),
+                    Some(h) => fmt.row("Nameserver", &format!("{name}  {h}")),
                     None    => fmt.row("Nameserver", name),
                 }
             }
@@ -148,7 +150,7 @@ impl HostResponse {
         if let Some(h) = &self.handle { fmt.row("Handle", h); }
         if let Some(n) = &self.name { fmt.row("Name", n); }
         if let (Some(start), Some(end)) = (&self.start_address, &self.end_address) {
-            fmt.row("Range", &format!("{} – {}", start, end));
+            fmt.row("Range", &format!("{start} – {end}"));
         }
         if let Some(t) = &self.ip_type { fmt.row("Type", t); }
         if let Some(c) = &self.country { fmt.row("Country", c); }
@@ -214,7 +216,7 @@ impl DomainSearchResponse {
         } else {
             for d in results {
                 let n = d.unicode_name.as_ref().or(d.ldh_name.as_ref())
-                    .map(|s| s.as_str()).unwrap_or("—");
+                    .map_or("—", String::as_str);
                 let status = d.status.as_deref().unwrap_or_default().join(", ");
                 println!("  {:<42}  {}", n.to_uppercase(), status);
             }
@@ -242,7 +244,7 @@ impl EntitySearchResponse {
                 let h = e.handle.as_deref().unwrap_or("—");
                 let roles = e.roles.as_deref().unwrap_or_default().join(", ");
                 let name = vcard_field(&e.vcard_array, "fn").unwrap_or_default();
-                println!("  {:<24}  {:<20}  {}", h, roles, name);
+                println!("  {h:<24}  {roles:<20}  {name}");
             }
         }
         if let Some(pm) = &self.paging_metadata {
@@ -286,7 +288,7 @@ impl NoridDomainCountResponse {
         if let Some(entries) = &self.domain_count {
             for dc in entries {
                 let domain = dc.parent_domain_name.as_deref().unwrap_or("—");
-                let count  = dc.count.map(|n| n.to_string()).unwrap_or_else(|| "—".to_string());
+                let count  = dc.count.map_or_else(|| "—".to_string(), |n| n.to_string());
                 fmt.row(domain, &count);
             }
         }

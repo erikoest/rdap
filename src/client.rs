@@ -1,5 +1,16 @@
 use crate::format::Formatter;
 
+pub struct ClientConfig {
+    pub server: String,
+    pub auth: Option<(String, String)>,
+    pub cursor: Option<String>,
+    pub count: bool,
+    pub sort: Option<String>,
+    pub fields: Option<String>,
+    pub debug: bool,
+    pub no_color: bool,
+}
+
 pub struct Client {
     http: reqwest::Client,
     pub(crate) server: String,
@@ -13,18 +24,19 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(
-        http: reqwest::Client,
-        server: String,
-        auth: Option<(String, String)>,
-        cursor: Option<String>,
-        count: bool,
-        sort: Option<String>,
-        fields: Option<String>,
-        debug: bool,
-        no_color: bool,
-    ) -> Self {
-        Self { http, server, auth, cursor, count, sort, fields, debug, fmt: Formatter::new(no_color) }
+    #[must_use]
+    pub fn new(http: reqwest::Client, cfg: ClientConfig) -> Self {
+        Self {
+            http,
+            server: cfg.server,
+            auth: cfg.auth,
+            cursor: cfg.cursor,
+            count: cfg.count,
+            sort: cfg.sort,
+            fields: cfg.fields,
+            debug: cfg.debug,
+            fmt: Formatter::new(cfg.no_color),
+        }
     }
 
     pub(crate) async fn fetch<T: serde::de::DeserializeOwned>(

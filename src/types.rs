@@ -146,6 +146,7 @@ pub struct NoridDomainCountResponse {
     pub domain_count: Option<Vec<DomainCount>>,
 }
 
+#[must_use]
 pub fn vcard_field(vcard: &Option<Value>, field: &str) -> Option<String> {
     let arr = vcard.as_ref()?.as_array()?;
     // vcardArray is ["vcard", [[type, params, kind, value], ...]]
