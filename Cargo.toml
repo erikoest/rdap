@@ -6,6 +6,7 @@ description = "A command-line RDAP client for looking up domains, nameservers, a
 license = "MIT"
 
 [package.metadata.deb]
+name = "norid-rdap"
 maintainer = "Erik <erik@dengamle.no>"
 copyright = "2026, Erik"
 extended-description = "rdap is a command-line client for the Registration Data Access Protocol (RDAP). It supports domain, nameserver, and entity lookups, wildcard searches, RFC-8977 paging, RFC-8982 partial responses, and Norid registry extensions."

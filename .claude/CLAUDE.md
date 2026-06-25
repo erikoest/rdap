@@ -120,4 +120,5 @@ command line options can be configured.
 The project must include a man page for the application
 
 The project must include metadata in Cargo.toml so a debian package can be
-built with cargo deb
+built with cargo deb. The debian package should be named norid-rdap.
+
