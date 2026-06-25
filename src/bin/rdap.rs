@@ -81,13 +81,72 @@ enum Command {
     NoridDomainCount { identity: String },
 }
 
+#[derive(Default)]
+struct FileConfig {
+    server: Option<String>,
+    ipv4: bool,
+    ipv6: bool,
+    user: Option<String>,
+    password: Option<String>,
+    cursor: Option<String>,
+    count: bool,
+    sort: Option<String>,
+    fields: Option<String>,
+    debug: bool,
+    no_color: bool,
+}
+
+fn load_config() -> FileConfig {
+    let mut cfg = FileConfig::default();
+    let home = match std::env::var_os("HOME") {
+        Some(h) => h,
+        None => return cfg,
+    };
+    let path = std::path::Path::new(&home).join(".rdap.conf");
+    let contents = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(_) => return cfg,
+    };
+    for line in contents.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if let Some((key, val)) = line.split_once('=') {
+            match key.trim() {
+                "server"   => cfg.server   = Some(val.trim().to_string()),
+                "ipv4"     => cfg.ipv4     = val.trim() == "true",
+                "ipv6"     => cfg.ipv6     = val.trim() == "true",
+                "user"     => cfg.user     = Some(val.trim().to_string()),
+                "password" => cfg.password = Some(val.trim().to_string()),
+                "cursor"   => cfg.cursor   = Some(val.trim().to_string()),
+                "count"    => cfg.count    = val.trim() == "true",
+                "sort"     => cfg.sort     = Some(val.trim().to_string()),
+                "fields"   => cfg.fields   = Some(val.trim().to_string()),
+                "debug"    => cfg.debug    = val.trim() == "true",
+                "no_color" | "no-color" => cfg.no_color = val.trim() == "true",
+                _ => {}
+            }
+        }
+    }
+    cfg
+}
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+    let file = load_config();
 
-    let local_addr: Option<std::net::IpAddr> = if cli.ipv4 {
+    // CLI flags override config file; for conflicting ipv4/ipv6, CLI wins if either is set.
+    let (use_ipv4, use_ipv6) = if cli.ipv4 || cli.ipv6 {
+        (cli.ipv4, cli.ipv6)
+    } else {
+        (file.ipv4, file.ipv6)
+    };
+
+    let local_addr: Option<std::net::IpAddr> = if use_ipv4 {
         Some(std::net::Ipv4Addr::UNSPECIFIED.into())
-    } else if cli.ipv6 {
+    } else if use_ipv6 {
         Some(std::net::Ipv6Addr::UNSPECIFIED.into())
     } else {
         None
@@ -99,16 +158,21 @@ async fn main() {
     }
     let http = builder.build().expect("failed to build HTTP client");
 
+    let server = cli.server
+        .or(file.server)
+        .unwrap_or_else(|| "https://rdap.org".to_string());
+
+    let auth = cli.user.zip(cli.password).or_else(|| file.user.zip(file.password));
+
     let client = Client::new(http, ClientConfig {
-        server: cli.server.as_deref().unwrap_or("https://rdap.org")
-            .trim_end_matches('/').to_string(),
-        auth: cli.user.zip(cli.password),
-        cursor: cli.cursor,
-        count: cli.count,
-        sort: cli.sort,
-        fields: cli.fields,
-        debug: cli.debug,
-        no_color: cli.no_color,
+        server: server.trim_end_matches('/').to_string(),
+        auth,
+        cursor:   cli.cursor.or(file.cursor),
+        count:    cli.count  || file.count,
+        sort:     cli.sort.or(file.sort),
+        fields:   cli.fields.or(file.fields),
+        debug:    cli.debug  || file.debug,
+        no_color: cli.no_color || file.no_color,
     });
 
     let result = match &cli.command {
@@ -126,7 +190,7 @@ async fn main() {
     };
 
     if let Err(e) = result {
-        let esc = if cli.no_color { "\x1b[1m" } else { "\x1b[1;31m" };
+        let esc = if cli.no_color || file.no_color { "\x1b[1m" } else { "\x1b[1;31m" };
         eprintln!("{esc}error:\x1b[0m {e}");
         std::process::exit(1);
     }
