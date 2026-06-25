@@ -1,6 +1,7 @@
 /target
 *~
 *.lock
+.cargo
 skills-lock.json
 .worktrees
 test_private
