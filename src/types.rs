@@ -104,6 +104,15 @@ pub struct PagingMetadata {
     pub links: Option<Vec<Link>>,
 }
 
+impl PagingMetadata {
+    pub fn next_href(&self) -> Option<&str> {
+        self.links.as_deref()?
+            .iter()
+            .find(|l| l.rel.as_deref() == Some("next"))?
+            .href.as_deref()
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct DomainSearchResponse {
     #[serde(rename = "domainSearchResults")]

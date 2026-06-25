@@ -60,4 +60,21 @@ impl Client {
         }
         Ok(self.http.execute(req).await?.error_for_status()?.json().await?)
     }
+
+    /// Fetch a complete URL verbatim — used for `rel=next` paging links that
+    /// already carry their own query parameters.
+    pub(crate) async fn fetch_url<T: serde::de::DeserializeOwned>(
+        &self,
+        url: &str,
+    ) -> anyhow::Result<T> {
+        let mut req = self.http.get(url);
+        if let Some((user, pass)) = &self.auth {
+            req = req.basic_auth(user, Some(pass.as_str()));
+        }
+        let req = req.build()?;
+        if self.debug {
+            eprintln!("{}> {}\x1b[0m", self.fmt.dim(), req.url());
+        }
+        Ok(self.http.execute(req).await?.error_for_status()?.json().await?)
+    }
 }

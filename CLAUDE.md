@@ -14,6 +14,11 @@ cargo clippy
 cargo test
 ```
 
+## Git Guidelines
+
+- NEVER execute git commit, git push, or git merge.
+- When you are finished with a task, summarize the changes and ask the user to commit manually.
+
 ## Interface
 
 Support the following RDAP API calls:
@@ -37,6 +42,9 @@ Support the following RDAP extensions:
 - Basic authentication: RFC-2617
 - Paging and sorting: RFC-8977
 - Partial response: RFC-8982
+
+Support paging for search subcommands:
+- If the response contains a paging_metadata containing a 'next' link, this means that only part of the search answer has been returned. In this case the user must have the choice of retrieving the next part, by pressing 'space', or quit the search by pressing 'q'. By pressing space, the search request as shown in the 'next' link must be sent, and the response shown.
 
 Domain lookup must show nameserver handle for each nameserver in output
 

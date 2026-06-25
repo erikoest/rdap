@@ -1,5 +1,6 @@
 use crate::client::Client;
-use crate::types::{DomainSearchResponse, EntitySearchResponse, HostSearchResponse};
+use crate::pager::{PageAction, prompt_next_page};
+use crate::types::{DomainSearchResponse, EntitySearchResponse, HostSearchResponse, Link, PagingMetadata};
 
 impl Client {
     pub async fn search_domains(&self, name: &str) -> anyhow::Result<()> {
@@ -8,6 +9,20 @@ impl Client {
         self.fmt.heading(&format!("Domains matching \"{name}\""));
         resp.print(&self.fmt);
         println!();
+
+        let mut next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
+        while let Some(next_url) = next {
+            match prompt_next_page(self.fmt.nc) {
+                PageAction::Quit => break,
+                PageAction::Next => {
+                    let resp: DomainSearchResponse = self.fetch_url(&next_url).await?;
+                    next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
+                    resp.print(&self.fmt);
+                    println!();
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -27,6 +42,20 @@ impl Client {
         self.fmt.heading(&format!("Entities matching \"{pattern}\""));
         resp.print(&self.fmt);
         println!();
+
+        let mut next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
+        while let Some(next_url) = next {
+            match prompt_next_page(self.fmt.nc) {
+                PageAction::Quit => break,
+                PageAction::Next => {
+                    let resp: EntitySearchResponse = self.fetch_url(&next_url).await?;
+                    next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
+                    resp.print(&self.fmt);
+                    println!();
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -46,6 +75,31 @@ impl Client {
         self.fmt.heading(&format!("Nameservers matching \"{pattern}\""));
         resp.print(&self.fmt);
         println!();
+
+        let mut next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
+        while let Some(next_url) = next {
+            match prompt_next_page(self.fmt.nc) {
+                PageAction::Quit => break,
+                PageAction::Next => {
+                    let resp: HostSearchResponse = self.fetch_url(&next_url).await?;
+                    next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
+                    resp.print(&self.fmt);
+                    println!();
+                }
+            }
+        }
+
         Ok(())
     }
+}
+
+fn next_href<'a>(pm: &'a Option<PagingMetadata>, links: &'a Option<Vec<Link>>) -> Option<&'a str> {
+    pm.as_ref()
+        .and_then(|p| p.next_href())
+        .or_else(|| {
+            links.as_deref()?
+                .iter()
+                .find(|l| l.rel.as_deref() == Some("next"))?
+                .href.as_deref()
+        })
 }
