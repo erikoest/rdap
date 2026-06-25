@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo init *)",
+      "Bash(cargo build *)",
+      "Bash(cargo clippy *)",
+      "Bash(rtk git log*)"
+      "Bash(rtk git diff*)"
+      "Bash(rtk git show*)"
+    ],
+    "deny": [
+      "Bash(rtk git commit*)",
+      "Bash(rtk git push*)",
+      "Bash(rtk git merge*)",
+      "Bash(rtk git rebase*)"
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git rebase*)"
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
+}
