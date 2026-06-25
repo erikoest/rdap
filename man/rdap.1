@@ -1,0 +1,233 @@
+.TH RDAP 1 "2026\-06\-25" "rdap 0.1.0" "User Commands"
+.SH NAME
+rdap \- RDAP lookup and search client
+.SH SYNOPSIS
+.B rdap
+[\fIOPTIONS\fR]
+.I COMMAND
+[\fIARGS\fR]
+.SH DESCRIPTION
+.B rdap
+queries Registration Data Access Protocol (RDAP) servers to look up information
+about domain names, IP addresses, and entities (registrants, registrars, etc.).
+.PP
+The default server is
+.B https://rdap.org
+(an RDAP bootstrapping proxy that redirects to the authoritative registry for each query).
+A different server can be set with
+.B \-\-server
+or via the config file.
+.SH COMMANDS
+.TP
+.BI "domain " NAME
+Look up a domain name.
+Displays status, registration dates, nameservers (including Norid handle where available),
+entities, and notices.
+.TP
+.BI "nameserver " HOSTNAME
+Look up a nameserver by its fully-qualified hostname.
+Displays handle, name, IP addresses, status, events, and contacts.
+.TP
+.BI "entity " HANDLE
+Look up an entity (registrant, registrar, etc.) by handle.
+Public IDs are shown when present.
+.TP
+.BI "domains " PATTERN
+Search for domain names matching
+.IR PATTERN .
+Wildcards
+.B *
+and
+.B ?
+are supported.
+Results are paged: press
+.B space
+to fetch the next page or
+.B q
+to quit.
+.TP
+.B "entities \-\-handle" \fIPATTERN\fR | \fB\-\-fn\fR \fIPATTERN\fR
+Search for entities by handle pattern
+.RB ( \-\-handle )
+or full-name pattern
+.RB ( \-\-fn ).
+Exactly one of the two options is required.
+Results are paged (see
+.B domains
+above).
+.TP
+.B "nameservers \-\-name" \fIPATTERN\fR | \fB\-\-ip\fR \fIPATTERN\fR
+Search for nameservers by name pattern
+.RB ( \-\-name )
+or IP address pattern
+.RB ( \-\-ip ).
+Exactly one of the two options is required.
+Results are paged (see
+.B domains
+above).
+.TP
+.B help
+Fetch server help and usage notices from the RDAP server.
+.TP
+.BI "nameserver\-handle " HANDLE
+Look up a nameserver by its Norid handle.
+The handle must consist of characters
+.BR [A\-Z0\-9\-] .
+(Norid extension.)
+.TP
+.BI "norid\-domain\-count " IDENTITY
+Fetch the count of .no domains registered for a given identity string.
+The identity must consist of characters
+.BR [INPR0\-9.] .
+Displays the domain count and the parent domain name.
+(Norid extension.)
+.SH OPTIONS
+.TP
+.BR \-s ", " \-\-server " " \fIURL\fR
+RDAP server base URL.
+Trailing slashes are stripped.
+Default:
+.BR https://rdap.org .
+.TP
+.B \-\-ipv4
+Force all connections over IPv4.
+Mutually exclusive with
+.BR \-\-ipv6 .
+.TP
+.B \-\-ipv6
+Force all connections over IPv6.
+Mutually exclusive with
+.BR \-\-ipv4 .
+.TP
+.BR \-u ", " \-\-user " " \fIUSERNAME\fR
+Username for HTTP Basic authentication (RFC 2617).
+Requires
+.BR \-\-password .
+.TP
+.BR \-p ", " \-\-password " " \fIPASSWORD\fR
+Password for HTTP Basic authentication.
+Requires
+.BR \-\-user .
+.TP
+.B \-\-cursor " " \fICURSOR\fR
+Resume paging from the given cursor value (RFC 8977).
+The cursor string is printed at the end of each partial result set.
+.TP
+.B \-\-count
+Request that the server include a total-hit count in the response (RFC 8977).
+.TP
+.B \-\-sort " " \fIFIELD\fR
+Sort results by
+.IR FIELD .
+Prefix with
+.B \-
+for descending order (RFC 8977).
+.TP
+.B \-\-fields " " \fIFIELDS\fR
+Comma-separated list of top-level response fields to return (RFC 8982 partial response).
+.TP
+.B \-\-debug
+Print the full request URL to stderr before sending each request.
+.TP
+.B \-\-no\-color
+Use bold/underline/italic text attributes instead of ANSI colors.
+Useful for terminals that do not support color.
+.TP
+.BR \-h ", " \-\-help
+Print help and exit.
+.SH CONFIGURATION FILE
+.B rdap
+reads
+.I $HOME/.rdap.conf
+on startup.
+The file uses a simple
+.B key = value
+format, one option per line.
+Lines starting with
+.B #
+and blank lines are ignored.
+Command-line options always override config-file values.
+.PP
+Supported keys match the long option names:
+.BR server ,
+.BR ipv4 ,
+.BR ipv6 ,
+.BR user ,
+.BR password ,
+.BR cursor ,
+.BR count ,
+.BR sort ,
+.BR fields ,
+.BR debug ,
+.BR no_color
+(or
+.BR no\-color ).
+Boolean keys accept
+.B true
+or
+.BR false .
+.PP
+Example:
+.PP
+.RS
+.nf
+# ~/.rdap.conf
+server = https://rdap.norid.no
+user   = myuser
+password = secret
+no_color = true
+.fi
+.RE
+.SH RDAP EXTENSIONS
+.TP
+.B RFC 2617
+HTTP Basic Authentication via
+.BR \-\-user / \-\-password .
+.TP
+.B RFC 8977
+Paging and sorting via
+.BR \-\-cursor ,
+.BR \-\-count ,
+.BR \-\-sort .
+.TP
+.B RFC 8982
+Partial response via
+.BR \-\-fields .
+.SH EXAMPLES
+.TP
+Look up a domain:
+.B rdap domain example.com
+.TP
+Look up a nameserver:
+.B rdap nameserver ns1.example.com
+.TP
+Look up an entity:
+.B rdap entity GOGL123\-NORID
+.TP
+Search for .no domains with authentication:
+.B rdap \-\-server https://rdap.norid.no \-u user \-p pass domains 'example*'
+.TP
+Fetch server help:
+.B rdap help
+.TP
+Look up a Norid nameserver handle:
+.B rdap nameserver\-handle NS1\-NORID
+.TP
+Count .no domains for an organization:
+.B rdap norid\-domain\-count 123456789
+.SH FILES
+.TP
+.I $HOME/.rdap.conf
+Per-user configuration file.
+.SH SEE ALSO
+.BR whois (1)
+.PP
+RDAP bootstrap registry:
+.I https://rdap.org
+.PP
+Norid RDAP documentation:
+.I https://teknisk.norid.no/en/integrere\-mot\-norid/rdap\-tjenesten/
+.SH STANDARDS
+RFC 7480 (HTTP usage in RDAP),
+RFC 7481 (security), RFC 7482 (query format), RFC 7483 (JSON responses),
+RFC 8977 (paging/sorting), RFC 8982 (partial response).

@@ -1,6 +1,6 @@
 # rdap
 
-A command-line RDAP client for looking up domains, IP addresses, entities, and nameservers.
+A command-line RDAP client for looking up domains, nameservers, entities, and more.
 
 ## Installation
 
@@ -15,11 +15,11 @@ rdap [OPTIONS] <COMMAND>
 
 Commands:
   domain              Look up a domain name
-  host                Look up an IP address or CIDR block
+  nameserver          Look up a nameserver by hostname
   entity              Look up an entity by handle
   domains             Search for domain names
   entities            Search for entities
-  hosts               Search for hosts/nameservers
+  nameservers         Search for nameservers
   help                Fetch server help and usage notices
   nameserver-handle   Look up a nameserver by Norid handle (Norid extension)
   norid-domain-count  Fetch domain count for an identity (Norid extension)
@@ -43,9 +43,8 @@ Options:
 # Domain registration info
 rdap domain example.com
 
-# IP network info
-rdap host 8.8.8.8
-rdap host 2001:4860:4860::8888
+# Nameserver lookup
+rdap nameserver ns1.example.com
 
 # Entity (registrar, contact) by handle
 rdap entity GOGL
@@ -61,8 +60,8 @@ rdap entities --handle ARIN*
 rdap entities --fn "Google*"
 
 # Search for nameservers
-rdap hosts --name ns1.example*
-rdap hosts --ip 192.0.2.0/24
+rdap nameservers --name ns1.example*
+rdap nameservers --ip 192.0.2.0/24
 
 # Paging: limit results and fetch the next page (RFC-8977)
 rdap --count 10 domains example*
@@ -90,6 +89,6 @@ rdap --server https://rdap.norid.no norid-domain-count <identity>
 - By default queries go to `rdap.org`, which bootstraps to the authoritative registry for the object type.
 - `--user` and `--password` must be supplied together.
 - `--ipv4` and `--ipv6` are mutually exclusive.
-- `entities` search requires `--handle` or `--fn`; `hosts` search requires `--name` or `--ip`.
+- `entities` search requires `--handle` or `--fn`; `nameservers` search requires `--name` or `--ip`.
 - `--cursor`, `--count`, `--sort`, and `--fields` apply to all commands but are most relevant to search.
 - Norid extensions (`nameserver-handle`, `norid-domain-count`) require `--server https://rdap.norid.no`.

@@ -1,5 +1,5 @@
 use crate::client::Client;
-use crate::types::{DomainResponse, EntityResponse, HelpResponse, HostResponse, NoridDomainCountResponse};
+use crate::types::{DomainResponse, EntityResponse, HelpResponse, NameserverResponse, NoridDomainCountResponse};
 
 impl Client {
     pub async fn lookup_domain(&self, name: &str) -> anyhow::Result<()> {
@@ -12,10 +12,10 @@ impl Client {
         Ok(())
     }
 
-    pub async fn lookup_host(&self, address: &str) -> anyhow::Result<()> {
-        let url = format!("{}/ip/{address}", self.server);
-        let resp: HostResponse = self.fetch(&url, &[]).await?;
-        self.fmt.heading(&format!("Host / Network: {address}"));
+    pub async fn lookup_nameserver(&self, hostname: &str) -> anyhow::Result<()> {
+        let url = format!("{}/nameserver/{hostname}", self.server);
+        let resp: NameserverResponse = self.fetch(&url, &[]).await?;
+        self.fmt.heading(&format!("Nameserver: {hostname}"));
         resp.print(&self.fmt);
         println!();
         Ok(())
@@ -42,7 +42,7 @@ impl Client {
 
     pub async fn lookup_nameserver_handle(&self, handle: &str) -> anyhow::Result<()> {
         let url = format!("{}/nameserver_handle/{handle}", self.server);
-        let resp: HostResponse = self.fetch(&url, &[]).await?;
+        let resp: NameserverResponse = self.fetch(&url, &[]).await?;
         self.fmt.heading(&format!("Nameserver: {handle}"));
         resp.print(&self.fmt);
         println!();

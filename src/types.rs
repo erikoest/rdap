@@ -56,16 +56,20 @@ pub struct DomainResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct HostResponse {
+pub struct IpAddresses {
+    pub v4: Option<Vec<String>>,
+    pub v6: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct NameserverResponse {
     pub handle: Option<String>,
-    #[serde(rename = "startAddress")]
-    pub start_address: Option<String>,
-    #[serde(rename = "endAddress")]
-    pub end_address: Option<String>,
-    pub name: Option<String>,
-    #[serde(rename = "type")]
-    pub ip_type: Option<String>,
-    pub country: Option<String>,
+    #[serde(rename = "ldhName")]
+    pub ldh_name: Option<String>,
+    #[serde(rename = "unicodeName")]
+    pub unicode_name: Option<String>,
+    #[serde(rename = "ipAddresses")]
+    pub ip_addresses: Option<IpAddresses>,
     pub status: Option<Vec<String>>,
     pub events: Option<Vec<Event>>,
     pub entities: Option<Vec<Entity>>,
@@ -134,7 +138,7 @@ pub struct EntitySearchResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct HostSearchResponse {
+pub struct NameserverSearchResponse {
     #[serde(rename = "nameserverSearchResults")]
     pub results: Option<Vec<Nameserver>>,
     #[serde(rename = "paging_metadata")]
@@ -234,19 +238,24 @@ mod tests {
         assert!(r.events.is_none());
     }
 
-    // ── HostResponse deserialization ──────────────────────────────────────────
+    // ── NameserverResponse deserialization ────────────────────────────────────
 
     #[test]
-    fn host_response_deserializes_renamed_fields() {
+    fn nameserver_response_deserializes_renamed_fields() {
         let json = r#"{
-            "startAddress": "192.0.2.0",
-            "endAddress": "192.0.2.255",
-            "type": "ASSIGNED"
+            "handle": "NS1",
+            "ldhName": "ns1.example.com",
+            "unicodeName": "ns1.example.com",
+            "ipAddresses": {"v4": ["192.0.2.1"], "v6": ["2001:db8::1"]},
+            "status": ["active"]
         }"#;
-        let r: HostResponse = from_str(json).unwrap();
-        assert_eq!(r.start_address.as_deref(), Some("192.0.2.0"));
-        assert_eq!(r.end_address.as_deref(), Some("192.0.2.255"));
-        assert_eq!(r.ip_type.as_deref(), Some("ASSIGNED"));
+        let r: NameserverResponse = from_str(json).unwrap();
+        assert_eq!(r.handle.as_deref(), Some("NS1"));
+        assert_eq!(r.ldh_name.as_deref(), Some("ns1.example.com"));
+        assert_eq!(r.unicode_name.as_deref(), Some("ns1.example.com"));
+        let ips = r.ip_addresses.unwrap();
+        assert_eq!(ips.v4.as_deref(), Some(["192.0.2.1".to_string()].as_slice()));
+        assert_eq!(ips.v6.as_deref(), Some(["2001:db8::1".to_string()].as_slice()));
     }
 
     // ── EntityResponse deserialization ────────────────────────────────────────
@@ -297,12 +306,12 @@ mod tests {
         assert_eq!(r.results.as_ref().unwrap()[0].handle.as_deref(), Some("GOGL"));
     }
 
-    // ── HostSearchResponse deserialization ────────────────────────────────────
+    // ── NameserverSearchResponse deserialization ──────────────────────────────
 
     #[test]
-    fn host_search_response_deserializes_results_key() {
+    fn nameserver_search_response_deserializes_results_key() {
         let json = r#"{"nameserverSearchResults": [{"ldhName": "ns1.example.com"}]}"#;
-        let r: HostSearchResponse = from_str(json).unwrap();
+        let r: NameserverSearchResponse = from_str(json).unwrap();
         assert_eq!(r.results.as_ref().unwrap()[0].ldh_name.as_deref(), Some("ns1.example.com"));
     }
 }

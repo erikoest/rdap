@@ -2,6 +2,20 @@
 name = "rdap"
 version = "0.1.0"
 edition = "2021"
+description = "A command-line RDAP client for looking up domains, nameservers, and entities"
+license = "MIT"
+
+[package.metadata.deb]
+maintainer = "Erik <erik@dengamle.no>"
+copyright = "2026, Erik"
+extended-description = "rdap is a command-line client for the Registration Data Access Protocol (RDAP). It supports domain, nameserver, and entity lookups, wildcard searches, RFC-8977 paging, RFC-8982 partial responses, and Norid registry extensions."
+depends = "$auto"
+section = "net"
+priority = "optional"
+assets = [
+    { source = "target/release/rdap", dest = "usr/bin/", mode = "755" },
+    { source = "man/rdap.1", dest = "usr/share/man/man1/rdap.1", mode = "644" },
+]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

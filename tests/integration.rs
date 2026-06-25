@@ -83,12 +83,12 @@ fn client_with_opts(server_url: &str, cursor: Option<&str>, count: bool,
 // ── RDAP response fixtures ────────────────────────────────────────────────────
 
 const DOMAIN_JSON: &str = r#"{"ldhName":"example.com","handle":"D1234","status":["active"]}"#;
-const HOST_JSON: &str = r#"{"handle":"NET-8-8-8-0","startAddress":"8.8.8.0","endAddress":"8.8.8.255"}"#;
+const NAMESERVER_JSON: &str = r#"{"handle":"NS1","ldhName":"ns1.example.com","status":["active"]}"#;
 const ENTITY_JSON: &str = r#"{"handle":"GOGL","objectClassName":"entity"}"#;
 const HELP_JSON: &str = r#"{"notices":[{"title":"About","description":["RDAP test server"]}]}"#;
 const DOMAIN_SEARCH_JSON: &str = r#"{"domainSearchResults":[{"ldhName":"example.com"}]}"#;
 const ENTITY_SEARCH_JSON: &str = r#"{"entitySearchResults":[{"handle":"GOGL","objectClassName":"entity"}]}"#;
-const HOST_SEARCH_JSON: &str = r#"{"nameserverSearchResults":[{"ldhName":"ns1.example.com"}]}"#;
+const NAMESERVER_SEARCH_JSON: &str = r#"{"nameserverSearchResults":[{"ldhName":"ns1.example.com"}]}"#;
 const DOMAIN_SEARCH_PAGED_JSON: &str = r#"{
     "domainSearchResults": [{"ldhName": "example.com"}],
     "paging_metadata": {
@@ -109,10 +109,10 @@ async fn lookup_domain_requests_correct_path() {
 }
 
 #[tokio::test]
-async fn lookup_host_requests_correct_path() {
-    let srv = MockServer::new(HOST_JSON).await;
-    client(&srv.url()).lookup_host("8.8.8.8").await.unwrap();
-    assert!(srv.last_request().await.starts_with("GET /ip/8.8.8.8 HTTP/1.1"));
+async fn lookup_nameserver_requests_correct_path() {
+    let srv = MockServer::new(NAMESERVER_JSON).await;
+    client(&srv.url()).lookup_nameserver("ns1.example.com").await.unwrap();
+    assert!(srv.last_request().await.starts_with("GET /nameserver/ns1.example.com HTTP/1.1"));
 }
 
 #[tokio::test]
@@ -156,18 +156,18 @@ async fn search_entities_with_fn_sends_fn_param() {
 }
 
 #[tokio::test]
-async fn search_hosts_with_name_sends_name_param() {
-    let srv = MockServer::new(HOST_SEARCH_JSON).await;
-    client(&srv.url()).search_hosts(Some("ns1*"), None).await.unwrap();
+async fn search_nameservers_with_name_sends_name_param() {
+    let srv = MockServer::new(NAMESERVER_SEARCH_JSON).await;
+    client(&srv.url()).search_nameservers(Some("ns1*"), None).await.unwrap();
     let req = srv.last_request().await;
-    assert!(req.starts_with("GET /hosts?"), "path: {req}");
+    assert!(req.starts_with("GET /nameservers?"), "path: {req}");
     assert!(req.contains("name=ns1"), "param: {req}");
 }
 
 #[tokio::test]
-async fn search_hosts_with_ip_sends_ip_param() {
-    let srv = MockServer::new(HOST_SEARCH_JSON).await;
-    client(&srv.url()).search_hosts(None, Some("8.8.8.*")).await.unwrap();
+async fn search_nameservers_with_ip_sends_ip_param() {
+    let srv = MockServer::new(NAMESERVER_SEARCH_JSON).await;
+    client(&srv.url()).search_nameservers(None, Some("8.8.8.*")).await.unwrap();
     let req = srv.last_request().await;
     assert!(req.contains("ip="), "param: {req}");
 }
@@ -235,7 +235,7 @@ async fn search_entities_errors_without_handle_or_fn() {
 }
 
 #[tokio::test]
-async fn search_hosts_errors_without_name_or_ip() {
+async fn search_nameservers_errors_without_name_or_ip() {
     let c = client("http://localhost");
-    assert!(c.search_hosts(None, None).await.is_err());
+    assert!(c.search_nameservers(None, None).await.is_err());
 }

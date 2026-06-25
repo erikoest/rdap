@@ -1,7 +1,7 @@
 use crate::types::{
     DomainResponse, DomainSearchResponse, Entity, EntityResponse, EntitySearchResponse,
     NoridDomainCountResponse,
-    Event, HelpResponse, HostResponse, HostSearchResponse, Link, Notice, PagingMetadata,
+    Event, HelpResponse, Link, NameserverResponse, NameserverSearchResponse, Notice, PagingMetadata,
     vcard_field,
 };
 
@@ -71,6 +71,18 @@ impl Formatter {
 
     pub fn print_notices(&self, notices: &[Notice]) {
         for notice in notices {
+            self.print_notice(notice);
+        }
+    }
+
+    pub fn print_notices_filtered(&self, notices: &[Notice]) {
+        for notice in notices {
+            if notice.title.as_deref()
+                .map(|t| t.to_ascii_lowercase() == "terms of use")
+                .unwrap_or(false)
+            {
+                continue;
+            }
             self.print_notice(notice);
         }
     }
@@ -145,15 +157,20 @@ impl DomainResponse {
     }
 }
 
-impl HostResponse {
+impl NameserverResponse {
     pub fn print(&self, fmt: &Formatter) {
         if let Some(h) = &self.handle { fmt.row("Handle", h); }
-        if let Some(n) = &self.name { fmt.row("Name", n); }
-        if let (Some(start), Some(end)) = (&self.start_address, &self.end_address) {
-            fmt.row("Range", &format!("{start} – {end}"));
+        if let Some(n) = self.unicode_name.as_ref().or(self.ldh_name.as_ref()) {
+            fmt.row("Name", n);
         }
-        if let Some(t) = &self.ip_type { fmt.row("Type", t); }
-        if let Some(c) = &self.country { fmt.row("Country", c); }
+        if let Some(ips) = &self.ip_addresses {
+            if let Some(v4) = &ips.v4 {
+                for addr in v4 { fmt.row("IPv4", addr); }
+            }
+            if let Some(v6) = &ips.v6 {
+                for addr in v6 { fmt.row("IPv6", addr); }
+            }
+        }
         if let Some(statuses) = &self.status {
             fmt.row("Status", &statuses.join(", "));
         }
@@ -218,7 +235,7 @@ impl DomainSearchResponse {
                 let n = d.unicode_name.as_ref().or(d.ldh_name.as_ref())
                     .map_or("—", String::as_str);
                 let status = d.status.as_deref().unwrap_or_default().join(", ");
-                println!("  {:<42}  {}", n.to_uppercase(), status);
+                println!("  {:<42}  {}", n.to_lowercase(), status);
             }
         }
         if let Some(pm) = &self.paging_metadata {
@@ -229,7 +246,7 @@ impl DomainSearchResponse {
             fmt.print_next_cursor(links);
         }
         if let Some(notices) = self.notices.as_deref() {
-            fmt.print_notices(notices);
+            fmt.print_notices_filtered(notices);
         }
     }
 }
@@ -255,19 +272,23 @@ impl EntitySearchResponse {
             fmt.print_next_cursor(links);
         }
         if let Some(notices) = self.notices.as_deref() {
-            fmt.print_notices(notices);
+            fmt.print_notices_filtered(notices);
         }
     }
 }
 
-impl HostSearchResponse {
+impl NameserverSearchResponse {
     pub fn print(&self, fmt: &Formatter) {
         let results = self.results.as_deref().unwrap_or_default();
         if results.is_empty() {
             println!("  No results.");
         } else {
             for ns in results {
-                println!("  {}", ns.ldh_name.as_deref().unwrap_or("—"));
+                let name = ns.ldh_name.as_deref().unwrap_or("—");
+                match ns.handle.as_deref() {
+                    Some(h) => println!("  {name:<42}  {h}"),
+                    None    => println!("  {name}"),
+                }
             }
         }
         if let Some(pm) = &self.paging_metadata {
@@ -278,7 +299,7 @@ impl HostSearchResponse {
             fmt.print_next_cursor(links);
         }
         if let Some(notices) = self.notices.as_deref() {
-            fmt.print_notices(notices);
+            fmt.print_notices_filtered(notices);
         }
     }
 }

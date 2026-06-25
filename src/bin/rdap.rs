@@ -1,6 +1,22 @@
 use clap::{Parser, Subcommand};
 use rdap::client::{Client, ClientConfig};
 
+fn validate_nameserver_handle(s: &str) -> Result<String, String> {
+    if s.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-') {
+        Ok(s.to_string())
+    } else {
+        Err("handle must only contain characters [A-Z0-9-]".to_string())
+    }
+}
+
+fn validate_norid_identity(s: &str) -> Result<String, String> {
+    if s.chars().all(|c| matches!(c, 'I' | 'N' | 'P' | 'R' | '0'..='9' | '.')) {
+        Ok(s.to_string())
+    } else {
+        Err("identity must only contain characters [INPR0-9.]".to_string())
+    }
+}
+
 #[derive(Parser)]
 #[command(name = "rdap", about = "RDAP lookup client", disable_help_subcommand = true)]
 #[allow(clippy::struct_excessive_bools)]
@@ -46,8 +62,8 @@ struct Cli {
 enum Command {
     /// Look up a domain name
     Domain { name: String },
-    /// Look up an IP address or CIDR block
-    Host { address: String },
+    /// Look up a nameserver by hostname
+    Nameserver { hostname: String },
     /// Look up an entity by handle
     Entity { handle: String },
     /// Search for domain names
@@ -64,8 +80,8 @@ enum Command {
         #[arg(long = "fn", value_name = "PATTERN")]
         fn_name: Option<String>,
     },
-    /// Search for hosts/nameservers
-    Hosts {
+    /// Search for nameservers
+    Nameservers {
         /// Name pattern
         #[arg(long, value_name = "PATTERN")]
         name: Option<String>,
@@ -76,9 +92,15 @@ enum Command {
     /// Fetch server help and usage notices
     Help,
     /// Look up a nameserver by Norid handle [A-Z0-9-] (Norid extension)
-    NameserverHandle { handle: String },
+    NameserverHandle {
+        #[arg(value_parser = validate_nameserver_handle)]
+        handle: String,
+    },
     /// Fetch the count of .no domains for a given identity [INPR0-9.] (Norid extension)
-    NoridDomainCount { identity: String },
+    NoridDomainCount {
+        #[arg(value_parser = validate_norid_identity)]
+        identity: String,
+    },
 }
 
 #[derive(Default)]
@@ -177,13 +199,13 @@ async fn main() {
 
     let result = match &cli.command {
         Command::Domain { name }    => client.lookup_domain(name).await,
-        Command::Host { address }   => client.lookup_host(address).await,
+        Command::Nameserver { hostname } => client.lookup_nameserver(hostname).await,
         Command::Entity { handle }  => client.lookup_entity(handle).await,
         Command::Domains { name }   => client.search_domains(name).await,
         Command::Entities { handle, fn_name } =>
             client.search_entities(handle.as_deref(), fn_name.as_deref()).await,
-        Command::Hosts { name, ip } =>
-            client.search_hosts(name.as_deref(), ip.as_deref()).await,
+        Command::Nameservers { name, ip } =>
+            client.search_nameservers(name.as_deref(), ip.as_deref()).await,
         Command::Help               => client.lookup_help().await,
         Command::NameserverHandle { handle } => client.lookup_nameserver_handle(handle).await,
         Command::NoridDomainCount { identity } => client.lookup_norid_domain_count(identity).await,

@@ -1,6 +1,6 @@
 use crate::client::Client;
 use crate::pager::{PageAction, prompt_next_page};
-use crate::types::{DomainSearchResponse, EntitySearchResponse, HostSearchResponse, Link, PagingMetadata};
+use crate::types::{DomainSearchResponse, EntitySearchResponse, NameserverSearchResponse, Link, PagingMetadata};
 
 impl Client {
     pub async fn search_domains(&self, name: &str) -> anyhow::Result<()> {
@@ -59,18 +59,18 @@ impl Client {
         Ok(())
     }
 
-    pub async fn search_hosts(
+    pub async fn search_nameservers(
         &self,
         name: Option<&str>,
         ip: Option<&str>,
     ) -> anyhow::Result<()> {
-        let url = format!("{}/hosts", self.server);
+        let url = format!("{}/nameservers", self.server);
         let extra: Vec<(&str, &str)> = match (name, ip) {
             (Some(n), _) => vec![("name", n)],
             (_, Some(i)) => vec![("ip", i)],
-            _ => anyhow::bail!("hosts search requires --name or --ip"),
+            _ => anyhow::bail!("nameservers search requires --name or --ip"),
         };
-        let resp: HostSearchResponse = self.fetch(&url, &extra).await?;
+        let resp: NameserverSearchResponse = self.fetch(&url, &extra).await?;
         let pattern = name.or(ip).unwrap_or("*");
         self.fmt.heading(&format!("Nameservers matching \"{pattern}\""));
         resp.print(&self.fmt);
@@ -81,7 +81,7 @@ impl Client {
             match prompt_next_page(self.fmt.nc) {
                 PageAction::Quit => break,
                 PageAction::Next => {
-                    let resp: HostSearchResponse = self.fetch_url(&next_url).await?;
+                    let resp: NameserverSearchResponse = self.fetch_url(&next_url).await?;
                     next = next_href(&resp.paging_metadata, &resp.links).map(str::to_owned);
                     resp.print(&self.fmt);
                     println!();
