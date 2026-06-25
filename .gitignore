@@ -5,3 +5,4 @@
 skills-lock.json
 .worktrees
 test_private
+.claude/settings.local.json
